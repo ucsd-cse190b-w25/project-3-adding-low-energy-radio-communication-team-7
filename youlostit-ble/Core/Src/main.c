@@ -23,11 +23,12 @@
 #include "i2c.h"
 #include "lsm6dsl.h"
 #include <stdlib.h>
-
+#include <stdio.h>
+#include <string.h>
 #include "timer.h"
 
 #define MOTION_THRESHOLD 5000
-#define LOST_TIME 1200
+#define LOST_TIME 2400
 
 int dataAvailable = 0;
 
@@ -82,7 +83,14 @@ int main(void)
         {
             HAL_Delay(1000);
             // Send a string to the NORDIC UART service, remember to not include the newline
-            unsigned char test_str[] = "youlostit BLE test";
+            unsigned char test_str[20];
+
+            char time_str[10];
+            sprintf(time_str, "%d", (time / 40));
+            strcpy((char *)test_str, "turtle ");
+            strcat((char *)test_str, time_str);
+            strcat((char *)test_str, " seconds");
+
             updateCharValue(NORDIC_UART_SERVICE_HANDLE, READ_CHAR_HANDLE, 0, sizeof(test_str) - 1,
                             test_str);
         }
