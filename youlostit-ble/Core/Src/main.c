@@ -22,13 +22,14 @@
 #include "ble.h"
 #include "i2c.h"
 #include "lsm6dsl.h"
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include "timer.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define MOTION_THRESHOLD 5000
 #define LOST_TIME 2400
+#define SECONDS 40
 
 int dataAvailable = 0;
 
@@ -81,18 +82,22 @@ int main(void)
         }
         else if (lost_mode)
         {
-            HAL_Delay(1000);
-            // Send a string to the NORDIC UART service, remember to not include the newline
+            //  Send a string to the NORDIC UART service, remember to not include the newline
             unsigned char test_str[20];
 
             char time_str[10];
-            sprintf(time_str, "%d", (time / 40));
-            strcpy((char *)test_str, "turtle ");
-            strcat((char *)test_str, time_str);
-            strcat((char *)test_str, " seconds");
+            int sec = time / SECONDS;
+            if (sec % 10 == 0)
+            {
+                sprintf(time_str, "%d", sec);
+                strcpy((char *)test_str, "turtle ");
+                strcat((char *)test_str, time_str);
+                strcat((char *)test_str, " seconds");
 
-            updateCharValue(NORDIC_UART_SERVICE_HANDLE, READ_CHAR_HANDLE, 0, sizeof(test_str) - 1,
-                            test_str);
+                updateCharValue(NORDIC_UART_SERVICE_HANDLE, READ_CHAR_HANDLE, 0,
+                                sizeof(test_str) - 1, test_str);
+            }
+            HAL_Delay(1000);
         }
         // Wait for interrupt, only uncomment if low power is needed
         //__WFI();
