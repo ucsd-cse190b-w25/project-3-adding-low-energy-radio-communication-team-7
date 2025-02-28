@@ -67,26 +67,35 @@ int main(void)
 
     ble_init();
     timer_init(TIM2);
+    leds_init();
     i2c_init();
     lsm6dsl_init();
 
     HAL_Delay(10);
 
-    uint8_t nonDiscoverable = 0;
+    setDiscoverability(0);
+    uint8_t nonDiscoverable = 1;
 
     while (1)
     {
+    	if (!nonDiscoverable && HAL_GPIO_ReadPin(BLE_INT_GPIO_Port, BLE_INT_Pin))
+		{
+			catchBLE();
+		}
     	if(interrupt_flag)
     	{
     		uint32_t catch_time = time;
     		interrupt_flag = 0;
     		check_movement(); // check for movement
-			if (!nonDiscoverable && HAL_GPIO_ReadPin(BLE_INT_GPIO_Port, BLE_INT_Pin))
+
+			if (lost_mode)
 			{
-				catchBLE();
-			}
-			else if (lost_mode)
-			{
+				leds_set(0b11);
+				if(nonDiscoverable)
+				{
+					setDiscoverability(1);
+					nonDiscoverable = 0;
+				}
 				//  Send a string to the NORDIC UART service, remember to not include the newline
 				unsigned char test_str[20];
 
@@ -101,6 +110,16 @@ int main(void)
 
 					updateCharValue(NORDIC_UART_SERVICE_HANDLE, READ_CHAR_HANDLE, 0,
 									sizeof(test_str) - 1, test_str);
+				}
+			}
+			else
+			{
+				leds_set(0b00);
+				if(!nonDiscoverable)
+				{
+					disconnectBLE();
+					setDiscoverability(0);
+					nonDiscoverable = 1;
 				}
 			}
     	}
