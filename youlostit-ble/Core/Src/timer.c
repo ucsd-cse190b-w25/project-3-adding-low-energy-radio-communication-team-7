@@ -31,7 +31,7 @@ void timer_init(TIM_TypeDef *timer)
     timer->DIER &= ~TIM_DIER_UIE;
 
     // set prescalar so that unit is ms
-    timer->PSC = 4000 - 1;
+    timer->PSC = 8000 - 1;
 
     // set auto-reload register so that the timer will go off every 50ms
     timer->ARR = 50 - 1;
