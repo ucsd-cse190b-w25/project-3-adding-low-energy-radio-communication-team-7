@@ -90,7 +90,7 @@ int main(void)
 
 			if (lost_mode)
 			{
-				leds_set(0b11);
+//				leds_set(0b11);
 				if(nonDiscoverable)
 				{
 					setDiscoverability(1);
@@ -100,7 +100,7 @@ int main(void)
 				unsigned char test_str[20];
 
 				char time_str[10];
-				int sec = catch_time / SECONDS;
+				int sec = (catch_time / SECONDS) - 60;
 				if (sec % 10 == 0 && catch_time % SECONDS == 0)
 				{
 					sprintf(time_str, "%d", sec);
@@ -112,15 +112,12 @@ int main(void)
 									sizeof(test_str) - 1, test_str);
 				}
 			}
-			else
+			else if(!nonDiscoverable)
 			{
-				leds_set(0b00);
-				if(!nonDiscoverable)
-				{
-					disconnectBLE();
-					setDiscoverability(0);
-					nonDiscoverable = 1;
-				}
+//				leds_set(0b00);
+				disconnectBLE();
+				setDiscoverability(0);
+				nonDiscoverable = 1;
 			}
     	}
 
