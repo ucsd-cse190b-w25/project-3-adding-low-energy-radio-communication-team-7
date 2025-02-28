@@ -20,6 +20,7 @@
 /* Includes ------------------------------------------------------------------*/
 // #include "ble_commands.h"
 #include "ble.h"
+#include "leds.h"
 #include "i2c.h"
 #include "lsm6dsl.h"
 #include "timer.h"
@@ -28,8 +29,8 @@
 #include <string.h>
 
 #define MOTION_THRESHOLD 5000
-#define LOST_TIME 2400
-#define SECONDS 40
+#define LOST_TIME 1200
+#define SECONDS 20
 
 int dataAvailable = 0;
 
@@ -41,6 +42,7 @@ static void MX_SPI3_Init(void);
 
 volatile uint32_t time = 0;     // Time the device has been still
 volatile uint8_t lost_mode = 0; // Flag for lost mode
+volatile uint8_t interrupt_flag = 0;
 
 /**
  * @brief  The application entry point.
@@ -74,31 +76,35 @@ int main(void)
 
     while (1)
     {
-        check_movement(); // check for movement
+    	if(interrupt_flag)
+    	{
+    		uint32_t catch_time = time;
+    		interrupt_flag = 0;
+    		check_movement(); // check for movement
+			if (!nonDiscoverable && HAL_GPIO_ReadPin(BLE_INT_GPIO_Port, BLE_INT_Pin))
+			{
+				catchBLE();
+			}
+			else if (lost_mode)
+			{
+				//  Send a string to the NORDIC UART service, remember to not include the newline
+				unsigned char test_str[20];
 
-        if (!nonDiscoverable && HAL_GPIO_ReadPin(BLE_INT_GPIO_Port, BLE_INT_Pin))
-        {
-            catchBLE();
-        }
-        else if (lost_mode)
-        {
-            //  Send a string to the NORDIC UART service, remember to not include the newline
-            unsigned char test_str[20];
+				char time_str[10];
+				int sec = catch_time / SECONDS;
+				if (sec % 10 == 0 && catch_time % SECONDS == 0)
+				{
+					sprintf(time_str, "%d", sec);
+					strcpy((char *)test_str, "Mommy ");
+					strcat((char *)test_str, time_str);
+					strcat((char *)test_str, " seconds");
 
-            char time_str[10];
-            int sec = time / SECONDS;
-            if (sec % 10 == 0)
-            {
-                sprintf(time_str, "%d", sec);
-                strcpy((char *)test_str, "turtle ");
-                strcat((char *)test_str, time_str);
-                strcat((char *)test_str, " seconds");
+					updateCharValue(NORDIC_UART_SERVICE_HANDLE, READ_CHAR_HANDLE, 0,
+									sizeof(test_str) - 1, test_str);
+				}
+			}
+    	}
 
-                updateCharValue(NORDIC_UART_SERVICE_HANDLE, READ_CHAR_HANDLE, 0,
-                                sizeof(test_str) - 1, test_str);
-            }
-            HAL_Delay(1000);
-        }
         // Wait for interrupt, only uncomment if low power is needed
         //__WFI();
     }
@@ -322,6 +328,7 @@ void TIM2_IRQHandler()
     {
         TIM2->SR &= ~TIM_SR_UIF; // clear the update interrupt flag
         time++;                  // increment the time the device has been still
+        interrupt_flag = 1;
     }
 };
 
