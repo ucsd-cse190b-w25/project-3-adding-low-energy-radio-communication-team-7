@@ -28,8 +28,8 @@
 #include <string.h>
 
 #define MOTION_THRESHOLD 5000
-#define LOST_TIME 2400
-#define SECONDS 40
+#define LOST_TIME 1200
+#define SECONDS 20
 
 int dataAvailable = 0;
 
@@ -74,6 +74,9 @@ int main(void)
 
     while (1)
     {
+    	disconnectBLE();
+    	setDiscoverability(nonDiscoverable);
+
         check_movement(); // check for movement
 
         if (!nonDiscoverable && HAL_GPIO_ReadPin(BLE_INT_GPIO_Port, BLE_INT_Pin))
@@ -83,19 +86,23 @@ int main(void)
         else if (lost_mode)
         {
             //  Send a string to the NORDIC UART service, remember to not include the newline
-            unsigned char test_str[20];
+
 
             char time_str[10];
+            unsigned char test_str2[20];
             int sec = time / SECONDS;
             if (sec % 10 == 0)
             {
-                sprintf(time_str, "%d", sec);
-                strcpy((char *)test_str, "turtle ");
-                strcat((char *)test_str, time_str);
-                strcat((char *)test_str, " seconds");
-
+            	unsigned char test_str[] = "turtle missing for";
                 updateCharValue(NORDIC_UART_SERVICE_HANDLE, READ_CHAR_HANDLE, 0,
                                 sizeof(test_str) - 1, test_str);
+
+                sprintf(time_str, "%d", sec - 60);
+				strcpy((char *)test_str2, time_str);
+				strcat((char *)test_str2, " seconds");
+
+				updateCharValue(NORDIC_UART_SERVICE_HANDLE, READ_CHAR_HANDLE, 0,
+								sizeof(test_str2) - 1, test_str2);
             }
             HAL_Delay(1000);
         }
