@@ -70,12 +70,12 @@ int main(void)
 
     HAL_Delay(10);
 
-    uint8_t nonDiscoverable = 0;
+    uint8_t nonDiscoverable = 1;
+    setDiscoverability(0);
 
     while (1)
     {
-    	disconnectBLE();
-    	setDiscoverability(nonDiscoverable);
+
 
         check_movement(); // check for movement
 
@@ -83,11 +83,14 @@ int main(void)
         {
             catchBLE();
         }
-        else if (lost_mode)
+        if (lost_mode)
         {
             //  Send a string to the NORDIC UART service, remember to not include the newline
 
-
+        	if (nonDiscoverable){
+        		setDiscoverability(1);
+        		nonDiscoverable = 0 ;
+        	}
             char time_str[10];
             unsigned char test_str2[20];
             int sec = time / SECONDS;
@@ -104,8 +107,16 @@ int main(void)
 				updateCharValue(NORDIC_UART_SERVICE_HANDLE, READ_CHAR_HANDLE, 0,
 								sizeof(test_str2) - 1, test_str2);
             }
-            HAL_Delay(1000);
+
+
         }
+        else if (!nonDiscoverable){
+			disconnectBLE();
+        	setDiscoverability(0);
+        	nonDiscoverable = 1;
+
+        }
+
         // Wait for interrupt, only uncomment if low power is needed
         //__WFI();
     }
