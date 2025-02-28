@@ -11,6 +11,7 @@
  #include <string.h>
  #include "ble_commands.h"
 
+
  extern SPI_HandleTypeDef hspi3;
  extern int dataAvailable;
 
@@ -35,6 +36,7 @@
  uint8_t* rxEvent;
  int16_t connectionHandler[2] = {-1, -1}; // Little Endian Format for connection handler
 
+
  /**
   * Initializes the BLE module with appropriate settings
   */
@@ -51,6 +53,7 @@
 	 if(res==BLE_OK){
 		stackInitCompleteFlag|=0x01;
 	 }
+
 	 }
 	 HAL_Delay(10);
 	 free(rxEvent);
@@ -129,6 +132,7 @@
    //PIN_CS of SPI2 LOW
    HAL_GPIO_WritePin(BLE_CS_GPIO_Port,BLE_CS_Pin,0);
 
+
    //SPI2 in this case, it could change according to the board
    //we send a byte containing a request of reading followed by 4 dummy bytes
    HAL_SPI_TransmitReceive(&hspi3,master_header,slave_header,5,1);
@@ -136,7 +140,10 @@
    HAL_Delay(1);
    HAL_GPIO_WritePin(BLE_CS_GPIO_Port,BLE_CS_Pin,0);
 
+
+ 
    HAL_SPI_TransmitReceive(&hspi3,master_header,slave_header,5,1);
+ 
 
    //let's get the size of data available
    int dataSize;
@@ -147,6 +154,7 @@
    if(dataSize>size){
 	   dataSize=size;
    }
+
 
    if(dataSize>0){
 		 //let's fill the get the bytes availables and insert them into the container variable
@@ -173,7 +181,6 @@
 	 int j=0;
 
 	 for(j=0;j<size;j++){
-
 		 if(event[j]!=reference[j]){
 			 return -1;
 		 }
@@ -192,6 +199,7 @@
 	 do{
 	   HAL_GPIO_WritePin(BLE_CS_GPIO_Port,BLE_CS_Pin,0);
 
+
 	   //wait until it is possible to write
 	   //while(!dataAvailable);
 	   HAL_SPI_TransmitReceive(&hspi3,master_header,slave_header,5,1);
@@ -208,6 +216,7 @@
 
  }
 
+
  void catchBLE(uint8_t * byte1, uint8_t * byte2){
 	 int result=fetchBleEvent(buffer,127);
 	 if(result==BLE_OK){
@@ -219,7 +228,8 @@
 			 *(connectionHandler) = buffer[5];
 			 *(connectionHandler + 1) = buffer[6];
 		 }
-		 if (checkEventResp(buffer, EVENT_GATT_CHANGED, 6)){
+
+		 if (checkEventResp(buffer, EVENT_GATT_CHANGED, 5) == BLE_OK){
 			 *(connectionHandler) = buffer[5];
 			 *(connectionHandler + 1) = buffer[6];
 		 }
@@ -227,6 +237,7 @@
 		 //something bad is happening if I am here
 	 }
  }
+
 
  void setConnectable(){
 		uint8_t* rxEvent;
@@ -244,6 +255,7 @@
 
 		ACI_GAP_SET_DISCOVERABLE[11]=sizeof(deviceName)+1;
 		ACI_GAP_SET_DISCOVERABLE[3]=sizeof(deviceName)+5+sizeof(ACI_GAP_SET_DISCOVERABLE)-4;
+
 
 		uint8_t *discoverableCommand;
 		discoverableCommand=(uint8_t*)malloc(sizeof(ACI_GAP_SET_DISCOVERABLE)+sizeof(deviceName)+5);
@@ -296,7 +308,6 @@
 			}
 		}
 
-
 		response=fetchBleEvent(rxEvent,sizeRes+returnHandles*2);
 		if(response==BLE_OK){
 			response=checkEventResp(rxEvent,result,sizeRes);
@@ -310,6 +321,7 @@
  void addService(uint8_t* UUID, uint8_t* handle, int attributes){
 
 
+
 	 //memcpy
 	 memcpy(ADD_PRIMARY_SERVICE+5,UUID,16);
 	 ADD_PRIMARY_SERVICE[22]=attributes;
@@ -320,9 +332,10 @@
 		free(rxEvent);
  }
 
+ 
  void addCharacteristic(uint8_t* UUID,uint8_t* handleChar, uint8_t* handleService, uint8_t maxsize, uint8_t proprieties){
 	 memcpy(ADD_CUSTOM_CHAR+7,UUID,16);
-
+ 
 	 ADD_CUSTOM_CHAR[4]= handleService[0];
 	 ADD_CUSTOM_CHAR[5]= handleService[1];
 	 ADD_CUSTOM_CHAR[23]= maxsize;
@@ -355,6 +368,7 @@
  }
 
  /**
+
   * @brief Disconnects the peripheral from the central
  */
  void disconnectBLE(){
@@ -398,3 +412,4 @@
 		 // Do nothing
 	 }
  }
+
