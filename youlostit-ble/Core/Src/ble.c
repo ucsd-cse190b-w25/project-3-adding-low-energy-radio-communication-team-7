@@ -15,8 +15,7 @@
  extern int dataAvailable;
 
  // Device name sent in BLE advertisement packets
-
- uint8_t deviceName[]={'T','U','R','T','L','E'};
+ uint8_t deviceName[]={'M','o','m','m','y'};
 
  uint8_t buffer[255];
 
@@ -36,7 +35,6 @@
  uint8_t* rxEvent;
  int16_t connectionHandler[2] = {-1, -1}; // Little Endian Format for connection handler
 
-
  /**
   * Initializes the BLE module with appropriate settings
   */
@@ -53,7 +51,6 @@
 	 if(res==BLE_OK){
 		stackInitCompleteFlag|=0x01;
 	 }
-
 	 }
 	 HAL_Delay(10);
 	 free(rxEvent);
@@ -141,7 +138,6 @@
 
    HAL_SPI_TransmitReceive(&hspi3,master_header,slave_header,5,1);
 
-
    //let's get the size of data available
    int dataSize;
    dataSize=(slave_header[3]|slave_header[4]<<8);
@@ -156,12 +152,14 @@
 		 //let's fill the get the bytes availables and insert them into the container variable
 		   for(i=0;i<dataSize;i++){
 		   HAL_SPI_TransmitReceive(&hspi3,(uint8_t*)&dummy,container+i,1,1);
+
 		   }
 		   HAL_GPIO_WritePin(BLE_CS_GPIO_Port,BLE_CS_Pin,1);
 	   }else{
 		   HAL_GPIO_WritePin(BLE_CS_GPIO_Port,BLE_CS_Pin,1);
 		 return -1;
 	   }
+
    //let's stop the SPI2
    dataAvailable=0;
    return BLE_OK;
@@ -169,14 +167,18 @@
    return -2;
    }
  }
+
+
  int checkEventResp(uint8_t *event, uint8_t *reference, int size){
 	 int j=0;
 
 	 for(j=0;j<size;j++){
+
 		 if(event[j]!=reference[j]){
 			 return -1;
 		 }
 	 }
+
  return BLE_OK;
  }
 
@@ -189,6 +191,7 @@
 
 	 do{
 	   HAL_GPIO_WritePin(BLE_CS_GPIO_Port,BLE_CS_Pin,0);
+
 	   //wait until it is possible to write
 	   //while(!dataAvailable);
 	   HAL_SPI_TransmitReceive(&hspi3,master_header,slave_header,5,1);
@@ -202,6 +205,9 @@
 	   HAL_GPIO_WritePin(BLE_CS_GPIO_Port,BLE_CS_Pin,1);
 	   dataAvailable=0;
 	 }while(result!=0);
+
+ }
+
  void catchBLE(uint8_t * byte1, uint8_t * byte2){
 	 int result=fetchBleEvent(buffer,127);
 	 if(result==BLE_OK){
@@ -213,7 +219,6 @@
 			 *(connectionHandler) = buffer[5];
 			 *(connectionHandler + 1) = buffer[6];
 		 }
-
 		 if (checkEventResp(buffer, EVENT_GATT_CHANGED, 5) == BLE_OK){
 			 *(connectionHandler) = buffer[5];
 			 *(connectionHandler + 1) = buffer[6];
@@ -264,8 +269,6 @@
  		HAL_Delay(10);
   }
 
-
-
  /**
   * @brief Sends a BLE command and processes the response event.
   *
@@ -294,16 +297,20 @@
 				break;
 			}
 		}
+
+
 		response=fetchBleEvent(rxEvent,sizeRes+returnHandles*2);
 		if(response==BLE_OK){
 			response=checkEventResp(rxEvent,result,sizeRes);
 		}
 		HAL_Delay(10);
 
+
 	 return response;
  }
 
  void addService(uint8_t* UUID, uint8_t* handle, int attributes){
+
 
 	 //memcpy
 	 memcpy(ADD_PRIMARY_SERVICE+5,UUID,16);
@@ -314,6 +321,7 @@
 		 }
 		free(rxEvent);
  }
+
  void addCharacteristic(uint8_t* UUID,uint8_t* handleChar, uint8_t* handleService, uint8_t maxsize, uint8_t proprieties){
 	 memcpy(ADD_CUSTOM_CHAR+7,UUID,16);
 
@@ -327,6 +335,7 @@
 	 }
 	 free(rxEvent);
  }
+
  void updateCharValue(uint8_t* handleService,uint8_t* handleChar, int offset, int size,uint8_t* data){
 	 UPDATE_CHAR[3]=size+6;
 	 UPDATE_CHAR[4]=handleService[0];
@@ -335,6 +344,7 @@
 	 UPDATE_CHAR[7]=handleChar[1];
 	 UPDATE_CHAR[8]=offset;
 	 UPDATE_CHAR[9]=size;
+
 	 uint8_t* commandComplete;
 	 commandComplete=(uint8_t*)malloc(10+size);
 	 memcpy(commandComplete,UPDATE_CHAR,10);
@@ -371,6 +381,7 @@
 	 free(rxEvent);
 	 }
  }
+
  /**
   * DO NOT CHANGE FUNCTION definition
   * @brief Sets the discoverability of the peripheral
