@@ -40,9 +40,9 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_SPI3_Init(void);
 
-volatile uint32_t time = 0;     // Time the device has been still
-volatile uint8_t lost_mode = 0; // Flag for lost mode
-volatile uint8_t interrupt_flag = 0;
+volatile uint32_t time = 0;          // Time the device has been still
+volatile uint8_t lost_mode = 0;      // Flag for lost mode
+volatile uint8_t interrupt_flag = 0; // Flag for timer interrupt
 
 /**
  * @brief  The application entry point.
@@ -65,62 +65,61 @@ int main(void)
     HAL_Delay(10);
     HAL_GPIO_WritePin(BLE_RESET_GPIO_Port, BLE_RESET_Pin, GPIO_PIN_SET);
 
+    // initialize all functions
     ble_init();
     timer_init(TIM2);
-//    leds_init();
     i2c_init();
     lsm6dsl_init();
 
     HAL_Delay(10);
 
+    // start discoverablity at 0
     setDiscoverability(0);
-    uint8_t nonDiscoverable = 1;
+    uint8_t nonDiscoverable = 1; // flag to check if the device is discoverable
 
     while (1)
     {
-    	if (!nonDiscoverable && HAL_GPIO_ReadPin(BLE_INT_GPIO_Port, BLE_INT_Pin))
-		{
-			catchBLE();
-		}
-    	if(interrupt_flag)
-    	{
-    		uint32_t catch_time = time;
-    		interrupt_flag = 0;
-    		check_movement(); // check for movement
+        if (!nonDiscoverable && HAL_GPIO_ReadPin(BLE_INT_GPIO_Port, BLE_INT_Pin))
+        {
+            catchBLE();
+        }
+        if (interrupt_flag) // check if the timer interrupt has occurred
+        {
+            uint32_t catch_time = time;
+            interrupt_flag = 0; // clear the interrupt flag
+            check_movement();   // check for movement
 
-			if (lost_mode)
-			{
-//				leds_set(0b11);
-				if(nonDiscoverable)
-				{
-					setDiscoverability(1);
-					nonDiscoverable = 0;
-				}
-				//  Send a string to the NORDIC UART service, remember to not include the newline
-				unsigned char test_str[20];
+            if (lost_mode) // check if the device is in lost mode
+            {
+                if (nonDiscoverable) // check if the device is not discoverable
+                {
+                    setDiscoverability(1); // set the device to discoverable
+                    nonDiscoverable = 0;   // set the flag to 0
+                }
+                //  Send a string to the NORDIC UART service, remember to not include the newline
+                unsigned char test_str[20]; // buffer to store the string
 
-				char time_str[10];
-				int sec = (catch_time / SECONDS) - 60;
-				if (sec % 10 == 0 && catch_time % SECONDS == 0)
-				{
-					sprintf(time_str, "%d", sec);
-					strcpy((char *)test_str, "TURTLE ");
-					strcat((char *)test_str, time_str);
-					strcat((char *)test_str, " seconds");
+                char time_str[10];                     // buffer to store the time
+                int sec = (catch_time / SECONDS) - 60; // calculate the time in seconds
+                if (sec % 10 == 0 && catch_time % SECONDS == 0)
+                {
+                    sprintf(time_str, "%d", sec);        // convert the time to a string
+                    strcpy((char *)test_str, "TURTLE "); // copy the string to the buffer
+                    strcat((char *)test_str, time_str);  // concatenate the time to the string
+                    strcat((char *)test_str, " seconds");
 
-					updateCharValue(NORDIC_UART_SERVICE_HANDLE, READ_CHAR_HANDLE, 0,
-									sizeof(test_str) - 1, test_str);
-				}
-			}
-			else if(!nonDiscoverable)
-			{
-//				leds_set(0b00);
-				disconnectBLE();
-				setDiscoverability(0);
-				nonDiscoverable = 1;
-			}
-    	}
-
+                    updateCharValue(NORDIC_UART_SERVICE_HANDLE, READ_CHAR_HANDLE, 0,
+                                    sizeof(test_str) - 1, test_str);
+                }
+            }
+            else if (!nonDiscoverable) // check if the device is not in lost mode
+            {
+                //				leds_set(0b00);
+                disconnectBLE();       // disconnect the BLE
+                setDiscoverability(0); // set the device to non discoverable
+                nonDiscoverable = 1;   // set the flag to 1
+            }
+        }
 
         // Wait for interrupt, only uncomment if low power is needed
         //__WFI();
