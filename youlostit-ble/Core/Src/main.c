@@ -104,7 +104,7 @@ int main(void)
 				if (sec % 10 == 0 && catch_time % SECONDS == 0)
 				{
 					sprintf(time_str, "%d", sec);
-					strcpy((char *)test_str, "Mommy ");
+					strcpy((char *)test_str, "TURTLE ");
 					strcat((char *)test_str, time_str);
 					strcat((char *)test_str, " seconds");
 
