@@ -66,4 +66,3 @@
      // Restart the timer
      timer->CR1 |= TIM_CR1_CEN;
  }
- 

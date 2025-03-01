@@ -15,7 +15,8 @@
  extern int dataAvailable;
 
  // Device name sent in BLE advertisement packets
- uint8_t deviceName[]={'M','o','m','m','y'};
+
+ uint8_t deviceName[]={'T','U','R','T','L','E'};
 
  uint8_t buffer[255];
 
@@ -140,6 +141,7 @@
 
    HAL_SPI_TransmitReceive(&hspi3,master_header,slave_header,5,1);
 
+
    //let's get the size of data available
    int dataSize;
    dataSize=(slave_header[3]|slave_header[4]<<8);
@@ -211,6 +213,7 @@
 			 *(connectionHandler) = buffer[5];
 			 *(connectionHandler + 1) = buffer[6];
 		 }
+
 		 if (checkEventResp(buffer, EVENT_GATT_CHANGED, 5) == BLE_OK){
 			 *(connectionHandler) = buffer[5];
 			 *(connectionHandler + 1) = buffer[6];
@@ -260,6 +263,7 @@
  		free(localname);
  		HAL_Delay(10);
   }
+
 
 
  /**
@@ -342,6 +346,7 @@
 	 free(rxEvent);
  }
 
+ /**
   * @brief Disconnects the peripheral from the central
  */
  void disconnectBLE(){
@@ -383,3 +388,4 @@
 	 else{
 		 // Do nothing
 	 }
+ }

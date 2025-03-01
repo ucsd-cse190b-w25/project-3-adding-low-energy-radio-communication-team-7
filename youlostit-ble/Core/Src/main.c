@@ -67,7 +67,7 @@ int main(void)
 
     ble_init();
     timer_init(TIM2);
-    leds_init();
+//    leds_init();
     i2c_init();
     lsm6dsl_init();
 
@@ -120,6 +120,7 @@ int main(void)
 				nonDiscoverable = 1;
 			}
     	}
+
 
         // Wait for interrupt, only uncomment if low power is needed
         //__WFI();
