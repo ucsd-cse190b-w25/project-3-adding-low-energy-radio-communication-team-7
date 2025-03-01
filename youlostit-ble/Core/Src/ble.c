@@ -11,11 +11,11 @@
  #include <string.h>
  #include "ble_commands.h"
 
-
  extern SPI_HandleTypeDef hspi3;
  extern int dataAvailable;
 
  // Device name sent in BLE advertisement packets
+
  uint8_t deviceName[]={'T','U','R','T','L','E'};
 
  uint8_t buffer[255];
@@ -132,7 +132,6 @@
    //PIN_CS of SPI2 LOW
    HAL_GPIO_WritePin(BLE_CS_GPIO_Port,BLE_CS_Pin,0);
 
-
    //SPI2 in this case, it could change according to the board
    //we send a byte containing a request of reading followed by 4 dummy bytes
    HAL_SPI_TransmitReceive(&hspi3,master_header,slave_header,5,1);
@@ -140,10 +139,8 @@
    HAL_Delay(1);
    HAL_GPIO_WritePin(BLE_CS_GPIO_Port,BLE_CS_Pin,0);
 
-
- 
    HAL_SPI_TransmitReceive(&hspi3,master_header,slave_header,5,1);
- 
+
 
    //let's get the size of data available
    int dataSize;
@@ -155,19 +152,16 @@
 	   dataSize=size;
    }
 
-
    if(dataSize>0){
 		 //let's fill the get the bytes availables and insert them into the container variable
 		   for(i=0;i<dataSize;i++){
 		   HAL_SPI_TransmitReceive(&hspi3,(uint8_t*)&dummy,container+i,1,1);
-
 		   }
 		   HAL_GPIO_WritePin(BLE_CS_GPIO_Port,BLE_CS_Pin,1);
 	   }else{
 		   HAL_GPIO_WritePin(BLE_CS_GPIO_Port,BLE_CS_Pin,1);
 		 return -1;
 	   }
-
    //let's stop the SPI2
    dataAvailable=0;
    return BLE_OK;
@@ -175,8 +169,6 @@
    return -2;
    }
  }
-
-
  int checkEventResp(uint8_t *event, uint8_t *reference, int size){
 	 int j=0;
 
@@ -185,7 +177,6 @@
 			 return -1;
 		 }
 	 }
-
  return BLE_OK;
  }
 
@@ -198,8 +189,6 @@
 
 	 do{
 	   HAL_GPIO_WritePin(BLE_CS_GPIO_Port,BLE_CS_Pin,0);
-
-
 	   //wait until it is possible to write
 	   //while(!dataAvailable);
 	   HAL_SPI_TransmitReceive(&hspi3,master_header,slave_header,5,1);
@@ -213,10 +202,6 @@
 	   HAL_GPIO_WritePin(BLE_CS_GPIO_Port,BLE_CS_Pin,1);
 	   dataAvailable=0;
 	 }while(result!=0);
-
- }
-
-
  void catchBLE(uint8_t * byte1, uint8_t * byte2){
 	 int result=fetchBleEvent(buffer,127);
 	 if(result==BLE_OK){
@@ -238,46 +223,48 @@
 	 }
  }
 
-
  void setConnectable(){
-		uint8_t* rxEvent;
-		//Start advertising
-		uint8_t *localname;
-		int res;
-		localname=(uint8_t*)malloc(sizeof(deviceName)+5);//carattere di terminazione+listauid+slavetemp
-		memcpy(localname,deviceName,sizeof(deviceName));
-		localname[sizeof(deviceName)+1]=0x00;
-		localname[sizeof(deviceName)+2]=0x00;
-		localname[sizeof(deviceName)+3]=0x00;
-		localname[sizeof(deviceName)+4]=0x00;
-		localname[sizeof(deviceName)]=0x00;
+ 		uint8_t* rxEvent;
+ 		//Start advertising
+ 		uint8_t *localname;
+ 		int res;
+ 		localname=(uint8_t*)malloc(sizeof(deviceName)+5);//carattere di terminazione+listauid+slavetemp
+ 		memcpy(localname,deviceName,sizeof(deviceName));
+ 		localname[sizeof(deviceName)+1]=0x00;
+ 		localname[sizeof(deviceName)+2]=0x00;
+ 		localname[sizeof(deviceName)+3]=0x00;
+ 		localname[sizeof(deviceName)+4]=0x00;
+ 		localname[sizeof(deviceName)]=0x00;
 
 
-		ACI_GAP_SET_DISCOVERABLE[11]=sizeof(deviceName)+1;
-		ACI_GAP_SET_DISCOVERABLE[3]=sizeof(deviceName)+5+sizeof(ACI_GAP_SET_DISCOVERABLE)-4;
+ 		ACI_GAP_SET_DISCOVERABLE[11]=sizeof(deviceName)+1;
+ 		ACI_GAP_SET_DISCOVERABLE[3]=sizeof(deviceName)+5+sizeof(ACI_GAP_SET_DISCOVERABLE)-4;
+
+ 		uint8_t *discoverableCommand;
+ 		discoverableCommand=(uint8_t*)malloc(sizeof(ACI_GAP_SET_DISCOVERABLE)+sizeof(deviceName)+5);
+ 		memcpy(discoverableCommand,ACI_GAP_SET_DISCOVERABLE,sizeof(ACI_GAP_SET_DISCOVERABLE));
+ 		memcpy(discoverableCommand+sizeof(ACI_GAP_SET_DISCOVERABLE),localname,sizeof(deviceName)+5);
+
+ 		// remove existing buffer content
+ 		rxEvent=(uint8_t*)malloc(7);
+ 		res=fetchBleEvent(rxEvent,7);
+
+ 		// send the command to make the peripheral discoverable
+ 		sendCommand(discoverableCommand,sizeof(deviceName)+5+sizeof(ACI_GAP_SET_DISCOVERABLE));
+ 		HAL_Delay(100);
+ 		res=fetchBleEvent(rxEvent,7);
+ 		if(res==BLE_OK){
+ 		   if(checkEventResp(rxEvent, ACI_GAP_SET_DISCOVERABLE_COMPLETE, 7)==BLE_OK){
+ 			  stackInitCompleteFlag|=0x80;
+ 		   }
+ 		}
+ 		free(rxEvent);
+ 		free(discoverableCommand);
+ 		free(localname);
+ 		HAL_Delay(10);
+  }
 
 
-		uint8_t *discoverableCommand;
-		discoverableCommand=(uint8_t*)malloc(sizeof(ACI_GAP_SET_DISCOVERABLE)+sizeof(deviceName)+5);
-		memcpy(discoverableCommand,ACI_GAP_SET_DISCOVERABLE,sizeof(ACI_GAP_SET_DISCOVERABLE));
-		memcpy(discoverableCommand+sizeof(ACI_GAP_SET_DISCOVERABLE),localname,sizeof(deviceName)+5);
-
-		sendCommand(discoverableCommand,sizeof(deviceName)+5+sizeof(ACI_GAP_SET_DISCOVERABLE));
-		rxEvent=(uint8_t*)malloc(7);
-		while(!dataAvailable);
-		res=fetchBleEvent(rxEvent,7);
-		if(res==BLE_OK){
-		res=checkEventResp(rxEvent,ACI_GAP_SET_DISCOVERABLE_COMPLETE,7);
-		if(res==BLE_OK){
-			stackInitCompleteFlag|=0x80;
-		}
-		}
-
-		free(rxEvent);
-		free(discoverableCommand);
-		free(localname);
-		HAL_Delay(10);
- }
 
  /**
   * @brief Sends a BLE command and processes the response event.
@@ -307,20 +294,16 @@
 				break;
 			}
 		}
-
 		response=fetchBleEvent(rxEvent,sizeRes+returnHandles*2);
 		if(response==BLE_OK){
 			response=checkEventResp(rxEvent,result,sizeRes);
 		}
 		HAL_Delay(10);
 
-
 	 return response;
  }
 
  void addService(uint8_t* UUID, uint8_t* handle, int attributes){
-
-
 
 	 //memcpy
 	 memcpy(ADD_PRIMARY_SERVICE+5,UUID,16);
@@ -331,11 +314,9 @@
 		 }
 		free(rxEvent);
  }
-
- 
  void addCharacteristic(uint8_t* UUID,uint8_t* handleChar, uint8_t* handleService, uint8_t maxsize, uint8_t proprieties){
 	 memcpy(ADD_CUSTOM_CHAR+7,UUID,16);
- 
+
 	 ADD_CUSTOM_CHAR[4]= handleService[0];
 	 ADD_CUSTOM_CHAR[5]= handleService[1];
 	 ADD_CUSTOM_CHAR[23]= maxsize;
@@ -346,7 +327,6 @@
 	 }
 	 free(rxEvent);
  }
-
  void updateCharValue(uint8_t* handleService,uint8_t* handleChar, int offset, int size,uint8_t* data){
 	 UPDATE_CHAR[3]=size+6;
 	 UPDATE_CHAR[4]=handleService[0];
@@ -355,7 +335,6 @@
 	 UPDATE_CHAR[7]=handleChar[1];
 	 UPDATE_CHAR[8]=offset;
 	 UPDATE_CHAR[9]=size;
-
 	 uint8_t* commandComplete;
 	 commandComplete=(uint8_t*)malloc(10+size);
 	 memcpy(commandComplete,UPDATE_CHAR,10);
@@ -368,7 +347,6 @@
  }
 
  /**
-
   * @brief Disconnects the peripheral from the central
  */
  void disconnectBLE(){
@@ -393,7 +371,6 @@
 	 free(rxEvent);
 	 }
  }
-
  /**
   * DO NOT CHANGE FUNCTION definition
   * @brief Sets the discoverability of the peripheral
@@ -412,4 +389,3 @@
 		 // Do nothing
 	 }
  }
-

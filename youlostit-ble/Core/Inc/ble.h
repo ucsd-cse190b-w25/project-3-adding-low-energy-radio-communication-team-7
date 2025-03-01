@@ -8,12 +8,10 @@
  #ifndef BLE_H_
  #define BLE_H_
 
-
  #include "main.h"
  //#include "ble_commands.h"
 
  #define BLE_OK 0
-
 
  #define EVENT_STARTUP_SIZE 6
  #define ACI_GATT_INIT_COMPLETE_SIZE 7

@@ -20,6 +20,7 @@
 /* Includes ------------------------------------------------------------------*/
 // #include "ble_commands.h"
 #include "ble.h"
+#include "leds.h"
 #include "i2c.h"
 #include "lsm6dsl.h"
 #include "timer.h"
@@ -41,6 +42,7 @@ static void MX_SPI3_Init(void);
 
 volatile uint32_t time = 0;     // Time the device has been still
 volatile uint8_t lost_mode = 0; // Flag for lost mode
+volatile uint8_t interrupt_flag = 0;
 
 /**
  * @brief  The application entry point.
@@ -65,57 +67,60 @@ int main(void)
 
     ble_init();
     timer_init(TIM2);
+//    leds_init();
     i2c_init();
     lsm6dsl_init();
 
     HAL_Delay(10);
 
-    uint8_t nonDiscoverable = 1;
     setDiscoverability(0);
+    uint8_t nonDiscoverable = 1;
 
     while (1)
     {
+    	if (!nonDiscoverable && HAL_GPIO_ReadPin(BLE_INT_GPIO_Port, BLE_INT_Pin))
+		{
+			catchBLE();
+		}
+    	if(interrupt_flag)
+    	{
+    		uint32_t catch_time = time;
+    		interrupt_flag = 0;
+    		check_movement(); // check for movement
 
+			if (lost_mode)
+			{
+//				leds_set(0b11);
+				if(nonDiscoverable)
+				{
+					setDiscoverability(1);
+					nonDiscoverable = 0;
+				}
+				//  Send a string to the NORDIC UART service, remember to not include the newline
+				unsigned char test_str[20];
 
-        check_movement(); // check for movement
+				char time_str[10];
+				int sec = (catch_time / SECONDS) - 60;
+				if (sec % 10 == 0 && catch_time % SECONDS == 0)
+				{
+					sprintf(time_str, "%d", sec);
+					strcpy((char *)test_str, "Mommy ");
+					strcat((char *)test_str, time_str);
+					strcat((char *)test_str, " seconds");
 
-        if (!nonDiscoverable && HAL_GPIO_ReadPin(BLE_INT_GPIO_Port, BLE_INT_Pin))
-        {
-            catchBLE();
-        }
-        if (lost_mode)
-        {
-            //  Send a string to the NORDIC UART service, remember to not include the newline
+					updateCharValue(NORDIC_UART_SERVICE_HANDLE, READ_CHAR_HANDLE, 0,
+									sizeof(test_str) - 1, test_str);
+				}
+			}
+			else if(!nonDiscoverable)
+			{
+//				leds_set(0b00);
+				disconnectBLE();
+				setDiscoverability(0);
+				nonDiscoverable = 1;
+			}
+    	}
 
-        	if (nonDiscoverable){
-        		setDiscoverability(1);
-        		nonDiscoverable = 0 ;
-        	}
-            char time_str[10];
-            unsigned char test_str2[20];
-            int sec = time / SECONDS;
-            if (sec % 10 == 0)
-            {
-            	unsigned char test_str[] = "turtle missing for";
-                updateCharValue(NORDIC_UART_SERVICE_HANDLE, READ_CHAR_HANDLE, 0,
-                                sizeof(test_str) - 1, test_str);
-
-                sprintf(time_str, "%d", sec - 60);
-				strcpy((char *)test_str2, time_str);
-				strcat((char *)test_str2, " seconds");
-
-				updateCharValue(NORDIC_UART_SERVICE_HANDLE, READ_CHAR_HANDLE, 0,
-								sizeof(test_str2) - 1, test_str2);
-            }
-
-
-        }
-        else if (!nonDiscoverable){
-			disconnectBLE();
-        	setDiscoverability(0);
-        	nonDiscoverable = 1;
-
-        }
 
         // Wait for interrupt, only uncomment if low power is needed
         //__WFI();
@@ -340,6 +345,7 @@ void TIM2_IRQHandler()
     {
         TIM2->SR &= ~TIM_SR_UIF; // clear the update interrupt flag
         time++;                  // increment the time the device has been still
+        interrupt_flag = 1;
     }
 };
 
