@@ -20,8 +20,8 @@
 /* Includes ------------------------------------------------------------------*/
 // #include "ble_commands.h"
 #include "ble.h"
-#include "leds.h"
 #include "i2c.h"
+#include "leds.h"
 #include "lsm6dsl.h"
 #include "timer.h"
 #include <stdio.h>
@@ -29,8 +29,9 @@
 #include <string.h>
 
 #define MOTION_THRESHOLD 5000
-#define LOST_TIME 1200
-#define SECONDS 20
+#define LOST_TIME 4
+#define SECONDS 1
+#define MS 5000
 
 int dataAvailable = 0;
 
@@ -70,8 +71,10 @@ int main(void)
     timer_init(TIM2);
     i2c_init();
     lsm6dsl_init();
+    leds_init();
 
     HAL_Delay(10);
+    timer_set_ms(TIM2, MS);
 
     // start discoverablity at 0
     setDiscoverability(0);
@@ -79,6 +82,7 @@ int main(void)
 
     while (1)
     {
+        leds_set(10);
         if (!nonDiscoverable && HAL_GPIO_ReadPin(BLE_INT_GPIO_Port, BLE_INT_Pin))
         {
             catchBLE();
@@ -96,7 +100,8 @@ int main(void)
                     setDiscoverability(1); // set the device to discoverable
                     nonDiscoverable = 0;   // set the flag to 0
                 }
-                //  Send a string to the NORDIC UART service, remember to not include the newline
+                //  Send a string to the NORDIC UART service, remember to not include the
+                //  newline
                 unsigned char test_str[20]; // buffer to store the string
 
                 char time_str[10];                     // buffer to store the time
@@ -105,7 +110,8 @@ int main(void)
                 {
                     sprintf(time_str, "%d", sec);        // convert the time to a string
                     strcpy((char *)test_str, "TURTLE "); // copy the string to the buffer
-                    strcat((char *)test_str, time_str);  // concatenate the time to the string
+                    strcat((char *)test_str,
+                           time_str); // concatenate the time to the string
                     strcat((char *)test_str, " seconds");
 
                     updateCharValue(NORDIC_UART_SERVICE_HANDLE, READ_CHAR_HANDLE, 0,
@@ -120,16 +126,34 @@ int main(void)
                 nonDiscoverable = 1;   // set the flag to 1
             }
         }
+        leds_set(01);
 
         // Wait for interrupt, only uncomment if low power is needed
         //__WFI();
+
+        // TODO Clear LPMS bits to set them to "000” (Stop mode)
+        // PWR->CR1 &= ~PWR_CR1_LPMS_Msk;
+        PWR->CR1 |= PWR_CR1_LPR;
+        //  // Prepare to enter deep sleep mode (Stop mode)
+        //  Set the SLEEPDEEP bit in the
+        //  System Control Register
+        //  SCB_SCR |= SCR_SLEEPDEEP_Msk;
+        // SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
+        // Execute the
+        // Wait-For-Interrupt instruction.
+        // This puts the CPU into deep sleep mode until an interrupt occurs.
+        __asm volatile("wfi"); // same as __WFI();
+        // After waking up, clear the SLEEPDEEP bit if you plan to return to a lighter sleep mode
+        // SCB->SCR &= ~SCB_SCR_SLEEPDEEP_Msk;
+        // Optionally reconfigure clocks or perform wake-up tasks
+        // here
     }
 }
 
 /**
  * @brief System Clock Configuration
- * @attention This changes the System clock frequency, make sure you reflect that change in your
- * timer
+ * @attention This changes the System clock frequency, make sure you reflect that change in
+ * your timer
  * @retval None
  */
 void SystemClock_Config(void)
@@ -316,8 +340,8 @@ void check_movement()
     int deltaZ = z - prev_z; // calculate the change in z
 
     if ((abs(deltaX) > MOTION_THRESHOLD) || (abs(deltaY) > MOTION_THRESHOLD) ||
-        (abs(deltaZ) > MOTION_THRESHOLD)) // check if the change in any of the axes is greater
-                                          // than the threshold
+        (abs(deltaZ) > MOTION_THRESHOLD)) // check if the change in any of the axes is
+                                          // greater than the threshold
     {
         time = 0;      // set the time the device has been still to 0
         lost_mode = 0; // reset the lost mode flag
