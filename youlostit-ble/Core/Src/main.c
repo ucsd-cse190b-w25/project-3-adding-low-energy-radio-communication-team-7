@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #define MOTION_THRESHOLD 5000
 #define LOST_TIME 4

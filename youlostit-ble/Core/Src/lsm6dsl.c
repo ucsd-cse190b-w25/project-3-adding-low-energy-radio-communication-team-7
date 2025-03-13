@@ -9,13 +9,24 @@
 void lsm6dsl_init()
 {
 
-    uint8_t ctrl1_xl[2] = {0x10, 0x60};
-    uint8_t int1_ctrl[2] = {0x0D, 0x01};
+    uint8_t ctrl1_xl[2] = {0x10, 0x40};		// 104 Hz for timer
+    uint8_t int1_ctrl[2] = {0x0D, 0x01};	// TODO: change interrupt config
 
-    i2c_transaction(0x6a, 0, ctrl1_xl, 2); // write CTRL1_XL = 60h
+    i2c_transaction(0x6a, 0, ctrl1_xl, 2); // write CTRL1_XL = 40h
 
     i2c_transaction(0x6a, 0, int1_ctrl, 2); // write INT1_CTRL = 01h
 };
+
+void lsm6dsl_setup_interrupts()
+{
+	// enable interrupts
+	// configure inactive settings
+	// set inactivity time threshold
+	// set gyroscope threshold
+	// drive interrupts to pin
+
+	// change ODR_XL
+}
 
 void lsm6dsl_read_xyz(int16_t *x, int16_t *y, int16_t *z)
 {
