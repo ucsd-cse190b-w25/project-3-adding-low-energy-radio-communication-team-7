@@ -29,7 +29,7 @@
 #include <string.h>
 
 #define MOTION_THRESHOLD 5000
-#define LOST_TIME 6
+#define LOST_TIME 1
 #define SECONDS 10
 #define RATE 10000
 
@@ -96,26 +96,26 @@ int main(void)
     {
         if (!nonDiscoverable && HAL_GPIO_ReadPin(BLE_INT_GPIO_Port, BLE_INT_Pin))
         {
-//        	__HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_7);
+        	__HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_7);
             catchBLE();
-//            __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_0);
+            __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_0);
         }
         if (interrupt_flag) // check if the timer interrupt has occurred
         {
             uint32_t catch_time = time;
             interrupt_flag = 0; // clear the interrupt flag	debug
-//            __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_7);
+            __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_7);
             check_movement();   // check for movement
-//             __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_0);
+             __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_0);
 
             if (lost_mode) // check if the device is in lost mode
             {
                 if (nonDiscoverable) // check if the device is not discoverable
                 {
-//                	__HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_7);
+                	__HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_7);
                     setDiscoverability(1); // set the device to discoverable
                     nonDiscoverable = 0;   // set the flag to 0
-//                    __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_0);
+                    __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_0);
                 }
                 __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_0);
                 //  Send a string to the NORDIC UART service, remember to not include the newline
@@ -133,18 +133,18 @@ int main(void)
                 __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_7);
                 updateCharValue(NORDIC_UART_SERVICE_HANDLE, READ_CHAR_HANDLE, 0,
                                 sizeof(test_str) - 1, test_str);
-//                __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_0);
+                __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_0);
                 //}
             }
             else if (!nonDiscoverable) // check if the device is not in lost mode
             {
                 //				leds_set(0b00);
-//            	__HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_7);
+            	__HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_7);
                 disconnectBLE();       // disconnect the BLE
                 setDiscoverability(0); // set the device to non discoverable
-//                standbyBle();
+                standbyBle();
                 nonDiscoverable = 1; // set the flag to 1
-//                __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_0);
+                __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_0);
             }
         }
 
@@ -155,9 +155,10 @@ int main(void)
         __HAL_RCC_GPIOB_CLK_DISABLE();
         __HAL_RCC_SPI3_CLK_DISABLE();
 
-        PWR->CR1 |= PWR_CR1_LPR;
+//        PWR->CR1 |= PWR_CR1_LPR;
 //        interrupt_flag = 0; // clear the interrupt flag	debug
-        __WFI();
+//        __WFI();
+         HAL_PWREx_EnterSTOP2Mode(PWR_STOPENTRY_WFI);
 
         HAL_ResumeTick();
         __HAL_RCC_GPIOA_CLK_ENABLE();
