@@ -10,11 +10,25 @@ void lsm6dsl_init()
 {
 
     uint8_t ctrl1_xl[2] = {0x10, 0x60};
-    uint8_t int1_ctrl[2] = {0x0D, 0x01};
+    //uint8_t int1_ctrl[2] = {0x0D, 0x01};
 
     i2c_transaction(0x6a, 0, ctrl1_xl, 2); // write CTRL1_XL = 60h
 
-    i2c_transaction(0x6a, 0, int1_ctrl, 2); // write INT1_CTRL = 01h
+    //i2c_transaction(0x6a, 0, int1_ctrl, 2); // write INT1_CTRL = 01h
+
+    // low power mode
+
+    uint8_t ctrl1_6c[2] = {0x15, 0};
+
+    // write
+    i2c_transaction(0x6a, 0, ctrl1_6c, 1);
+    // read
+    i2c_transaction(0x6a, 1, ctrl1_6c + 1, 1);
+
+    ctrl1_6c[1] |= (1 << 4);
+
+    // write
+    i2c_transaction(0x6a, 0, ctrl1_6c, 2);
 };
 
 void lsm6dsl_read_xyz(int16_t *x, int16_t *y, int16_t *z)

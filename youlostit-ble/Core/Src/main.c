@@ -68,8 +68,10 @@ int main(void)
 
     // initialize all functions
     ble_init();
-    timer_init(TIM2);
-    timer_set_ms(TIM2, RATE);
+    // timer_init(TIM2);
+    // timer_set_ms(TIM2, RATE);
+    lptim_init(LPTIM1);
+    lptim_set_ms(RATE);
     i2c_init();
     lsm6dsl_init();
 
@@ -367,6 +369,17 @@ void TIM2_IRQHandler()
         interrupt_flag = 1;
     }
 };
+
+// LPTIM1 interrupt handler
+void LPTIM1_IRQHandler()
+{
+    if (LPTIM1->ISR & LPTIM_ISR_ARRM) // Check if autoreload match flag is set
+    {
+        LPTIM1->ICR |= LPTIM_ICR_ARRMCF; // Clear the flag
+        time++;                          // Increment the time the device has been still
+        interrupt_flag = 1;              // Set the interrupt flag for the main loop
+    }
+}
 
 // write function for printf
 int _write(int file, char *ptr, int len)
