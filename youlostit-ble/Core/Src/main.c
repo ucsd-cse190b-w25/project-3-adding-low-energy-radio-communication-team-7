@@ -117,6 +117,7 @@ int main(void)
                     nonDiscoverable = 0;   // set the flag to 0
 //                    __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_0);
                 }
+                __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_0);
                 //  Send a string to the NORDIC UART service, remember to not include the newline
                 unsigned char test_str[20]; // buffer to store the string
 
@@ -132,7 +133,7 @@ int main(void)
                 __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_7);
                 updateCharValue(NORDIC_UART_SERVICE_HANDLE, READ_CHAR_HANDLE, 0,
                                 sizeof(test_str) - 1, test_str);
-                __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_0);
+//                __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_0);
                 //}
             }
             else if (!nonDiscoverable) // check if the device is not in lost mode
