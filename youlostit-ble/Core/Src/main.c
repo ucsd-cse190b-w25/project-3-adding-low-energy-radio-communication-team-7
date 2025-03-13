@@ -29,9 +29,9 @@
 #include <string.h>
 
 #define MOTION_THRESHOLD 5000
-#define LOST_TIME 2
-#define SECONDS 1
-#define RATE 5000
+#define LOST_TIME 6
+#define SECONDS 10
+#define RATE 10000
 
 int dataAvailable = 0;
 
@@ -85,11 +85,12 @@ int main(void)
 
     // Re-enable after wakeup if needed
 
-    // start discoverablity at 0
     __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_7);
+    // start discoverablity at 0
     setDiscoverability(0);
-    uint8_t nonDiscoverable = 1; // flag to check if the device is discoverable
     __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_0);
+
+    uint8_t nonDiscoverable = 1; // flag to check if the device is discoverable
 
     while (1)
     {
@@ -101,7 +102,6 @@ int main(void)
         }
         if (interrupt_flag) // check if the timer interrupt has occurred
         {
-
             uint32_t catch_time = time;
             interrupt_flag = 0; // clear the interrupt flag	debug
 //            __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_7);
@@ -121,7 +121,7 @@ int main(void)
                 unsigned char test_str[20]; // buffer to store the string
 
                 char time_str[10];                     // buffer to store the time
-                int sec = (catch_time / SECONDS) - 60; // calculate the time in seconds
+                int sec = (catch_time * SECONDS) - 60; // calculate the time in seconds
                 // if (sec % 10 == 0 && catch_time % SECONDS == 0)
                 //{
                 sprintf(time_str, "%d", sec);        // convert the time to a string
@@ -129,8 +129,10 @@ int main(void)
                 strcat((char *)test_str, time_str);  // concatenate the time to the string
                 strcat((char *)test_str, " seconds");
 
+                __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_7);
                 updateCharValue(NORDIC_UART_SERVICE_HANDLE, READ_CHAR_HANDLE, 0,
                                 sizeof(test_str) - 1, test_str);
+                __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_0);
                 //}
             }
             else if (!nonDiscoverable) // check if the device is not in lost mode
@@ -151,9 +153,11 @@ int main(void)
         __HAL_RCC_GPIOA_CLK_DISABLE();
         __HAL_RCC_GPIOB_CLK_DISABLE();
         __HAL_RCC_SPI3_CLK_DISABLE();
+
         PWR->CR1 |= PWR_CR1_LPR;
 //        interrupt_flag = 0; // clear the interrupt flag	debug
         __WFI();
+
         HAL_ResumeTick();
         __HAL_RCC_GPIOA_CLK_ENABLE();
         __HAL_RCC_GPIOB_CLK_ENABLE();
