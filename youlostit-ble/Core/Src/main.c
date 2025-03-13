@@ -20,8 +20,8 @@
 /* Includes ------------------------------------------------------------------*/
 // #include "ble_commands.h"
 #include "ble.h"
-#include "leds.h"
 #include "i2c.h"
+#include "leds.h"
 #include "lsm6dsl.h"
 #include "timer.h"
 #include <stdio.h>
@@ -29,8 +29,9 @@
 #include <string.h>
 
 #define MOTION_THRESHOLD 5000
-#define LOST_TIME 1200
-#define SECONDS 20
+#define LOST_TIME 2
+#define SECONDS 1
+#define RATE 5000
 
 int dataAvailable = 0;
 
@@ -68,10 +69,19 @@ int main(void)
     // initialize all functions
     ble_init();
     timer_init(TIM2);
+    timer_set_ms(TIM2, RATE);
     i2c_init();
     lsm6dsl_init();
 
     HAL_Delay(10);
+
+    // Be careful with ports containing wake-up pins
+
+    // __HAL_RCC_GPIOC_CLK_DISABLE();
+    // __HAL_RCC_GPIOD_CLK_DISABLE();
+    // __HAL_RCC_GPIOE_CLK_DISABLE();
+
+    // Re-enable after wakeup if needed
 
     // start discoverablity at 0
     setDiscoverability(0);
@@ -101,28 +111,38 @@ int main(void)
 
                 char time_str[10];                     // buffer to store the time
                 int sec = (catch_time / SECONDS) - 60; // calculate the time in seconds
-                if (sec % 10 == 0 && catch_time % SECONDS == 0)
-                {
-                    sprintf(time_str, "%d", sec);        // convert the time to a string
-                    strcpy((char *)test_str, "TURTLE "); // copy the string to the buffer
-                    strcat((char *)test_str, time_str);  // concatenate the time to the string
-                    strcat((char *)test_str, " seconds");
+                // if (sec % 10 == 0 && catch_time % SECONDS == 0)
+                //{
+                sprintf(time_str, "%d", sec);        // convert the time to a string
+                strcpy((char *)test_str, "TURTLE "); // copy the string to the buffer
+                strcat((char *)test_str, time_str);  // concatenate the time to the string
+                strcat((char *)test_str, " seconds");
 
-                    updateCharValue(NORDIC_UART_SERVICE_HANDLE, READ_CHAR_HANDLE, 0,
-                                    sizeof(test_str) - 1, test_str);
-                }
+                updateCharValue(NORDIC_UART_SERVICE_HANDLE, READ_CHAR_HANDLE, 0,
+                                sizeof(test_str) - 1, test_str);
+                //}
             }
             else if (!nonDiscoverable) // check if the device is not in lost mode
             {
                 //				leds_set(0b00);
                 disconnectBLE();       // disconnect the BLE
                 setDiscoverability(0); // set the device to non discoverable
-                nonDiscoverable = 1;   // set the flag to 1
+                standbyBle();
+                nonDiscoverable = 1; // set the flag to 1
             }
         }
 
         // Wait for interrupt, only uncomment if low power is needed
-        //__WFI();
+        HAL_SuspendTick();
+        __HAL_RCC_GPIOA_CLK_DISABLE();
+        __HAL_RCC_GPIOB_CLK_DISABLE();
+        __HAL_RCC_SPI3_CLK_DISABLE();
+        PWR->CR1 |= PWR_CR1_LPR;
+        __WFI();
+        HAL_ResumeTick();
+        __HAL_RCC_GPIOA_CLK_ENABLE();
+        __HAL_RCC_GPIOB_CLK_ENABLE();
+        __HAL_RCC_SPI3_CLK_ENABLE();
     }
 }
 
@@ -139,7 +159,7 @@ void SystemClock_Config(void)
 
     /** Configure the main internal regulator output voltage
      */
-    if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1) != HAL_OK)
+    if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE2) != HAL_OK)
     {
         Error_Handler();
     }
