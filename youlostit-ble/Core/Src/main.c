@@ -95,27 +95,27 @@ int main(void)
     {
         if (!nonDiscoverable && HAL_GPIO_ReadPin(BLE_INT_GPIO_Port, BLE_INT_Pin))
         {
-        	__HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_7);
+//        	__HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_7);
             catchBLE();
-            __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_0);
+//            __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_0);
         }
         if (interrupt_flag) // check if the timer interrupt has occurred
         {
 
             uint32_t catch_time = time;
-            interrupt_flag = 0; // clear the interrupt flag
-            __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_7);
+            interrupt_flag = 0; // clear the interrupt flag	debug
+//            __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_7);
             check_movement();   // check for movement
-             __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_0);
+//             __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_0);
 
             if (lost_mode) // check if the device is in lost mode
             {
                 if (nonDiscoverable) // check if the device is not discoverable
                 {
-                	__HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_7);
+//                	__HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_7);
                     setDiscoverability(1); // set the device to discoverable
                     nonDiscoverable = 0;   // set the flag to 0
-                    __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_0);
+//                    __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_0);
                 }
                 //  Send a string to the NORDIC UART service, remember to not include the newline
                 unsigned char test_str[20]; // buffer to store the string
@@ -136,26 +136,29 @@ int main(void)
             else if (!nonDiscoverable) // check if the device is not in lost mode
             {
                 //				leds_set(0b00);
-            	__HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_7);
+//            	__HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_7);
                 disconnectBLE();       // disconnect the BLE
                 setDiscoverability(0); // set the device to non discoverable
 //                standbyBle();
                 nonDiscoverable = 1; // set the flag to 1
-                __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_0);
+//                __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_0);
             }
         }
 
         // Wait for interrupt, only uncomment if low power is needed
+        __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_0);
         HAL_SuspendTick();
         __HAL_RCC_GPIOA_CLK_DISABLE();
         __HAL_RCC_GPIOB_CLK_DISABLE();
         __HAL_RCC_SPI3_CLK_DISABLE();
         PWR->CR1 |= PWR_CR1_LPR;
+//        interrupt_flag = 0; // clear the interrupt flag	debug
         __WFI();
         HAL_ResumeTick();
         __HAL_RCC_GPIOA_CLK_ENABLE();
         __HAL_RCC_GPIOB_CLK_ENABLE();
         __HAL_RCC_SPI3_CLK_ENABLE();
+        __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_7);
     }
 }
 
