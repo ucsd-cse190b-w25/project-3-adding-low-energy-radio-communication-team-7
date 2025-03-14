@@ -29,7 +29,7 @@
 #include <string.h>
 
 #define MOTION_THRESHOLD 5000
-#define LOST_TIME 1
+#define LOST_TIME 6
 #define SECONDS 10
 #define RATE 10000
 
@@ -149,7 +149,7 @@ int main(void)
         }
 
         // Wait for interrupt, only uncomment if low power is needed
-        __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_0);
+        //__HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_0);
         HAL_SuspendTick();
         __HAL_RCC_GPIOA_CLK_DISABLE();
         __HAL_RCC_GPIOB_CLK_DISABLE();
@@ -164,7 +164,7 @@ int main(void)
         __HAL_RCC_GPIOA_CLK_ENABLE();
         __HAL_RCC_GPIOB_CLK_ENABLE();
         __HAL_RCC_SPI3_CLK_ENABLE();
-        __HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_7);
+        //__HAL_RCC_MSI_RANGE_CONFIG(RCC_MSIRANGE_7);
     }
 }
 
